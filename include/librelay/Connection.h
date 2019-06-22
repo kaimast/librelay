@@ -22,6 +22,8 @@ public:
     virtual ~Connection() = default;
 
     virtual void send(bitstream &&data, bool blocking) = 0;
+
+    virtual void close() = 0;
 };
 
 }

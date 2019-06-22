@@ -6,6 +6,7 @@
 namespace relay
 {
 
+[[nodiscard]]
 std::shared_ptr<Connection> create_connection(const yael::network::Address &address, Callback &callback);
 
 }

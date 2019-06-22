@@ -13,6 +13,8 @@ public:
     ~ConnectionImpl();
 
     void send(bitstream &&data, bool blocking) override;
+    
+    void close() override { yael::NetworkSocketListener::close_socket(); }
 
 private:
     void on_network_message(yael::network::Socket::message_in_t &msg) override;
