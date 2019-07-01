@@ -11,6 +11,7 @@ nodes = json.load(f)["nodes"]
 processes = []
 clients = []
 num_clients = 5
+num_messages = 10*1000
 node_names = []
 
 for name in nodes:
@@ -24,7 +25,8 @@ sleep(2.0)
 for i in range(num_clients):
     node = node_names[i % len(node_names)]
     addr = nodes[node]
-    c = Popen(['./relay-test', addr, str(i)])
+    c = Popen(['./relay-test', addr, str(i),
+        "--num_clients="+str(num_clients), "--num_messages="+str(num_messages)])
     clients.append(c)
 
 for c in clients:

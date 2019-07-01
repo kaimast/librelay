@@ -69,7 +69,8 @@ Node::Node(const std::string &name, const std::string &config_file, uint32_t wai
     }
 
     // start worker threads
-    for(size_t i = 0; i < 8; ++i)
+    size_t num_threads = std::thread::hardware_concurrency();
+    for(size_t i = 0; i < num_threads; ++i)
     {
         m_workers.emplace_back(std::thread(&Node::work, this));
     }
@@ -103,7 +104,8 @@ Node::Node(const std::string &addr_str, const std::string &peer_addr_str, const 
     connect("", peer_addr);
 
     // start worker threads
-    for(size_t i = 0; i < 8; ++i)
+    size_t num_threads = std::thread::hardware_concurrency();
+    for(size_t i = 0; i < num_threads; ++i)
     {
         m_workers.emplace_back(std::thread(&Node::work, this));
     }
@@ -162,7 +164,11 @@ void Node::on_new_connection(std::unique_ptr<yael::network::Socket> &&socket)
         //
         // TODO move this to the peer class so it does not block the acceptor
         bool blocking = true;
-        peer->send(msg.data(), msg.size(), blocking);
+
+        // Defer writing to socket to the event loop
+        bool async = true;
+
+        peer->send(msg.data(), msg.size(), blocking, async);
     }
 }
 
@@ -230,7 +236,11 @@ void Node::broadcast(bitstream &&msg, const std::shared_ptr<Peer> &except)
         auto view = hdl.data();
 
         bool blocking = true;
-        p->send(view.data(), view.size(), blocking);
+
+        // Defer writing to socket to the event loop
+        bool async = true;
+
+        p->send(view.data(), view.size(), blocking, async);
     }
 }
 

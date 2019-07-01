@@ -11,27 +11,45 @@ namespace po = boost::program_options;
 std::mutex done_mutex;
 std::condition_variable done_cond;
 
-bool has_sent_data = false;
-bool has_received_data = false;
+bool g_has_sent_data = false;
+bool g_has_received_data = false;
 
-const size_t NUM_MESSAGES = 10 * 1000;
+size_t g_num_messages;
+size_t g_num_clients;
 
-size_t msgs[] = {0, 0, 0, 0, 0};
+std::mutex g_message_mutex;
+std::unordered_map<size_t, size_t> g_messages;
 
 void set_message(int32_t pos)
 {
-    msgs[pos] += 1;
+    std::unique_lock lock(g_message_mutex);
 
-    for(auto count: msgs)
+    auto it = g_messages.find(pos);
+
+    if(it == g_messages.end())
     {
-        if(count < NUM_MESSAGES)
+        g_messages[pos] = 1;
+    }
+    else
+    {
+        it->second += 1;
+    }
+
+    if(g_messages.size() < g_num_clients)
+    {
+        return;
+    }
+
+    for(auto [pos, count]: g_messages)
+    {
+        if(count < g_num_messages)
         {
             return;
         }
     }
 
     std::unique_lock loc(done_mutex);
-    has_received_data = true;
+    g_has_received_data = true;
     done_cond.notify_all();
 }
 
@@ -62,6 +80,8 @@ int main(int ac, char* av[])
     desc.add_options()
         ("address", po::value<std::string>()->required(), "")
         ("message", po::value<int32_t>()->required(), "")
+        ("num_clients", po::value<size_t>()->default_value(5), "")
+        ("num_messages", po::value<size_t>()->default_value(10'000), "")
     ;
 
     po::variables_map vm;
@@ -72,6 +92,9 @@ int main(int ac, char* av[])
     auto &el = yael::EventLoop::get_instance();
 
     auto addr_str = vm["address"].as<std::string>();
+
+    g_num_clients = vm["num_clients"].as<size_t>();
+    g_num_messages = vm["num_messages"].as<size_t>();
 
     auto found = addr_str.find(':');
     auto host = addr_str.substr(0, found);
@@ -90,7 +113,7 @@ int main(int ac, char* av[])
     // Wait for other clients to start
     std::this_thread::sleep_for(0.5s);
 
-    for(size_t i = 0; i < NUM_MESSAGES; ++i)
+    for(size_t i = 0; i < g_num_messages; ++i)
     {
         set_message(msg);
 
@@ -101,12 +124,12 @@ int main(int ac, char* av[])
         conn->send(std::move(block), blocking);
     }
 
-    has_sent_data = true;
+    g_has_sent_data = true;
 
     {
         std::unique_lock lock(done_mutex);
 
-        while(!(has_sent_data && has_received_data))
+        while(!(g_has_sent_data && g_has_received_data))
         {
             done_cond.wait(lock);
         }
