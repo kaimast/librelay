@@ -58,8 +58,9 @@ void Peer::on_network_message(yael::network::Socket::message_in_t &msg)
 
 void Peer::on_disconnect()
 {
-    auto myptr = std::dynamic_pointer_cast<Peer>(shared_from_this());
+    LOG(INFO) << "Peer @" << socket().get_remote_address() << " disconnected";
 
+    auto myptr = std::dynamic_pointer_cast<Peer>(shared_from_this());
     m_node.remove_peer(myptr);
 }
 
