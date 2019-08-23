@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <list>
+#include <set>
 #include <memory>
 #include <yael/network/Address.h>
 #include <yael/NetworkSocketListener.h>
