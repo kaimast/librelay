@@ -20,16 +20,24 @@ public:
 
     const std::string& name() const { return m_name; }
 
-    bool has_subscription(channel_id_t cid)
+    bool has_subscription(const std::set<channel_id_t> &channels)
     {
-        // cid < 0 -> broadcast
+        // empty channels -> send to all channels
         // empty subscriptions -> this peer is subscribed to everything
-        if(cid < 0 || m_subscriptions.empty())
+        if(channels.empty() || m_subscriptions.empty())
         {
             return true;
         }
 
-        return m_subscriptions.find(cid) == m_subscriptions.end();
+        for(auto cid: channels)
+        {
+            if(m_subscriptions.find(cid) != m_subscriptions.end())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 private:

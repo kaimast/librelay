@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <chrono>
+#include <stdbitstream.h>
 
 #include <yael/EventLoop.h>
 #include <yael/network/TcpSocket.h>
@@ -198,13 +199,13 @@ void Node::work()
 
         if(task)
         {
-            broadcast(task->channel, std::move(task->msg), task->except);
+            broadcast(std::move(task->channels), std::move(task->msg), task->except);
             delete task;
         }
     }
 }
 
-void Node::queue_broadcast(channel_id_t cid, bitstream &&msg, const std::shared_ptr<Peer> &except)
+void Node::queue_broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std::shared_ptr<Peer> &except)
 {
     std::unique_lock lock(m_task_mutex);
     
@@ -214,16 +215,16 @@ void Node::queue_broadcast(channel_id_t cid, bitstream &&msg, const std::shared_
         m_out_condition.wait(lock);
     }*/
 
-    m_tasks.push_back(new Task{cid, std::move(msg), except});
+    m_tasks.push_back(new Task{std::move(channels), std::move(msg), except});
     m_in_condition.notify_one();
 }
 
-void Node::broadcast(channel_id_t cid, bitstream &&msg, const std::shared_ptr<Peer> &except)
+void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std::shared_ptr<Peer> &except)
 {
     // prepend channel id to message
     msg.move_to(0);
-    msg.make_space(sizeof(cid));
-    msg << cid;
+    msg.make_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
+    msg << channels;
 
     auto hdl = m_message_cache.insert(std::move(msg));
 
@@ -239,7 +240,7 @@ void Node::broadcast(channel_id_t cid, bitstream &&msg, const std::shared_ptr<Pe
             continue;
         }
 
-        if(!p->has_subscription(cid))
+        if(!p->has_subscription(channels))
         {
             continue;
         }

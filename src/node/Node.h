@@ -32,19 +32,19 @@ public:
 
     void remove_peer(std::shared_ptr<Peer> peer);
 
-    void queue_broadcast(channel_id_t channel, bitstream &&msg, const std::shared_ptr<Peer> &excpet);
+    void queue_broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std::shared_ptr<Peer> &excpet);
 
 private:
     struct Task
     {
-        channel_id_t channel;
+        std::set<channel_id_t> channels;
         bitstream msg;
         std::shared_ptr<Peer> except;
     };
 
     void work();
 
-    void broadcast(channel_id_t channel, bitstream &&msg, const std::shared_ptr<Peer> &except);
+    void broadcast(std::set<channel_id_t> channel, bitstream &&msg, const std::shared_ptr<Peer> &except);
 
     void connect(const std::string &name, const yael::network::Address &addr);
 

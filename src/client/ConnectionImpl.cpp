@@ -31,13 +31,13 @@ ConnectionImpl::ConnectionImpl(const yael::network::Address &address, Callback &
 
 ConnectionImpl::~ConnectionImpl() = default;
 
-void ConnectionImpl::send(channel_id_t cid, bitstream &&data, bool blocking)
+void ConnectionImpl::send(std::set<channel_id_t> channels, bitstream &&data, bool blocking)
 {
     try {
         // prepend channel id to message
         data.move_to(0);
-        data.make_space(sizeof(cid));
-        data << cid;
+        data.make_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
+        data << channels;
 
         // pass data to the network layer in form a simple buffer
         uint8_t *ptr = 0;
@@ -52,16 +52,16 @@ void ConnectionImpl::send(channel_id_t cid, bitstream &&data, bool blocking)
 
 void ConnectionImpl::on_network_message(yael::network::Socket::message_in_t &msg)
 {
-    channel_id_t cid;
+    std::set<channel_id_t> channels;
 
     bitstream bs;
     bs.assign(msg.data, msg.length, false);
-    bs >> cid;
+    bs >> channels;
 
     bs.move_to(0);
-    bs.remove_space(sizeof(cid));
+    bs.remove_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
 
-    m_callback.on_new_message(cid, std::move(bs));
+    m_callback.on_new_message(channels, std::move(bs));
 }
 
 void ConnectionImpl::on_disconnect()

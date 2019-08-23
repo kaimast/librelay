@@ -53,14 +53,14 @@ void Peer::on_network_message(yael::network::Socket::message_in_t &msg)
         set_name(name);
         return;
     }
-
-    channel_id_t cid;
-    input >> cid;
+ 
+    std::set<channel_id_t> channels;
+    input >> channels;
     input.move_to(0);
-    input.remove_space(sizeof(cid));
+    input.remove_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
 
     auto except = std::dynamic_pointer_cast<Peer>(shared_from_this());
-    m_node.queue_broadcast(cid, std::move(input), except);
+    m_node.queue_broadcast(channels, std::move(input), except);
 }
 
 void Peer::on_disconnect()

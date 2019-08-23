@@ -56,7 +56,7 @@ void set_message(int32_t pos)
 class Callback : public relay::Callback
 {
 private:
-    void on_new_message(relay::channel_id_t, bitstream &&data) override
+    void on_new_message(std::set<relay::channel_id_t>, bitstream &&data) override
     {
         int32_t pos = 0;
         data >> pos;
@@ -121,7 +121,7 @@ int main(int ac, char* av[])
         block << msg;
 
         bool blocking = false;
-        conn->send(7, std::move(block), blocking);
+        conn->send({7}, std::move(block), blocking);
     }
 
     g_has_sent_data = true;
