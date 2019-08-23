@@ -70,7 +70,7 @@ Node::Node(const std::string &name, const std::string &config_file, uint32_t wai
     }
 
     // start worker threads
-    size_t num_threads = std::thread::hardware_concurrency();
+    size_t num_threads = 2*std::thread::hardware_concurrency();
     for(size_t i = 0; i < num_threads; ++i)
     {
         m_workers.emplace_back(std::thread(&Node::work, this));
