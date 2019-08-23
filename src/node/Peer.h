@@ -1,7 +1,9 @@
 #pragma once
 
+#include <set>
 #include <yael/DelayedNetworkSocketListener.h>
 
+#include "librelay/Connection.h"
 #include "NetworkConfig.h"
 
 namespace relay
@@ -17,7 +19,19 @@ public:
     Peer(const yael::network::Address &addr, Node &node, const NetworkConfig &config, const std::string &name);
 
     const std::string& name() const { return m_name; }
- 
+
+    bool has_subscription(channel_id_t cid)
+    {
+        // cid < 0 -> broadcast
+        // empty subscriptions -> this peer is subscribed to everything
+        if(cid < 0 || m_subscriptions.empty())
+        {
+            return true;
+        }
+
+        return m_subscriptions.find(cid) == m_subscriptions.end();
+    }
+
 private:
     void on_network_message(yael::network::Socket::message_in_t &msg) override;
     void on_disconnect() override;
@@ -26,7 +40,9 @@ private:
 
     Node &m_node;
     const NetworkConfig &m_config;
+
     std::string m_name;
+    std::set<channel_id_t> m_subscriptions;
 };
 
 inline void Peer::set_name(const std::string &name)

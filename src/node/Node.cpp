@@ -148,6 +148,7 @@ void Node::on_new_connection(std::unique_ptr<yael::network::Socket> &&socket)
     auto it = m_message_cache.iterate();
 
     // loop until we sent everything we saw
+    // FIXME only forward messages from relevant channels here
     while(peer->is_connected())
     {
         auto hdl = it.next();
@@ -197,13 +198,13 @@ void Node::work()
 
         if(task)
         {
-            broadcast(std::move(task->msg), task->except);
+            broadcast(task->channel, std::move(task->msg), task->except);
             delete task;
         }
     }
 }
 
-void Node::queue_broadcast(bitstream &&msg, const std::shared_ptr<Peer> &except)
+void Node::queue_broadcast(channel_id_t cid, bitstream &&msg, const std::shared_ptr<Peer> &except)
 {
     std::unique_lock lock(m_task_mutex);
     
@@ -213,12 +214,17 @@ void Node::queue_broadcast(bitstream &&msg, const std::shared_ptr<Peer> &except)
         m_out_condition.wait(lock);
     }*/
 
-    m_tasks.push_back(new Task{std::move(msg), except});
+    m_tasks.push_back(new Task{cid, std::move(msg), except});
     m_in_condition.notify_one();
 }
 
-void Node::broadcast(bitstream &&msg, const std::shared_ptr<Peer> &except)
+void Node::broadcast(channel_id_t cid, bitstream &&msg, const std::shared_ptr<Peer> &except)
 {
+    // prepend channel id to message
+    msg.move_to(0);
+    msg.make_space(sizeof(cid));
+    msg << cid;
+
     auto hdl = m_message_cache.insert(std::move(msg));
 
     std::unique_lock lock(m_peer_mutex);
@@ -229,6 +235,11 @@ void Node::broadcast(bitstream &&msg, const std::shared_ptr<Peer> &except)
     for(auto p: ccopy)
     {
         if(p == except)
+        {
+            continue;
+        }
+
+        if(!p->has_subscription(cid))
         {
             continue;
         }

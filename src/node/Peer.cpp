@@ -33,8 +33,10 @@ Peer::Peer(const yael::network::Address &addr, Node &node, const NetworkConfig &
     set_socket(std::move(s), yael::SocketType::Connection);
     set_name(name);
 
+    std::set<channel_id_t> subscriptions;
+
     bitstream hello;
-    hello << m_config.local_name();
+    hello << m_config.local_name() << subscriptions;
 
     send(hello.data(), hello.size());
 }
@@ -47,13 +49,18 @@ void Peer::on_network_message(yael::network::Socket::message_in_t &msg)
     if(m_name.empty())
     {
         std::string name;
-        input >> name;
+        input >> name >> m_subscriptions;
         set_name(name);
         return;
     }
 
+    channel_id_t cid;
+    input >> cid;
+    input.move_to(0);
+    input.remove_space(sizeof(cid));
+
     auto except = std::dynamic_pointer_cast<Peer>(shared_from_this());
-    m_node.queue_broadcast(std::move(input), except);
+    m_node.queue_broadcast(cid, std::move(input), except);
 }
 
 void Peer::on_disconnect()
