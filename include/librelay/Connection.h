@@ -24,7 +24,7 @@ class Connection
 public:
     virtual ~Connection() = default;
 
-    virtual void send(std::set<channel_id_t> channels, bitstream &&data, bool blocking) = 0;
+    virtual void send(const std::set<channel_id_t> &channels, bitstream &&data, bool blocking) = 0;
 
     virtual void close() = 0;
 };

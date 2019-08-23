@@ -13,7 +13,7 @@ public:
     ConnectionImpl(const yael::network::Address &address, Callback &callback, std::set<channel_id_t> subscriptions);
     ~ConnectionImpl();
 
-    void send(std::set<channel_id_t> channels, bitstream &&data, bool blocking) override;
+    void send(const std::set<channel_id_t>& channels, bitstream &&data, bool blocking) override;
     
     void close() override { yael::NetworkSocketListener::close_socket(); }
 

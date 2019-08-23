@@ -31,7 +31,7 @@ ConnectionImpl::ConnectionImpl(const yael::network::Address &address, Callback &
 
 ConnectionImpl::~ConnectionImpl() = default;
 
-void ConnectionImpl::send(std::set<channel_id_t> channels, bitstream &&data, bool blocking)
+void ConnectionImpl::send(const std::set<channel_id_t> &channels, bitstream &&data, bool blocking)
 {
     try {
         // prepend channel id to message
