@@ -108,7 +108,7 @@ int main(int ac, char* av[])
     auto msg = vm["message"].as<int32_t>();
 
     Callback callback;
-    auto conn = relay::create_connection( yael::network::resolve_URL(host, port), callback, {});
+    auto conn = relay::create_connection( yael::network::resolve_URL(host, port), callback, {1, 3, 4, 7});
 
     // Wait for other clients to start
     std::this_thread::sleep_for(0.5s);

@@ -44,9 +44,12 @@ public:
 
     const std::vector<edge_t>& edges() const { return m_edges; }
 
+    uint32_t num_channels() const { return m_num_channels; }
+
 private:
     const std::string m_local_name;
 
+    uint32_t m_num_channels;
     std::unordered_map<std::string, yael::network::Address> m_nodes;
     std::vector<edge_t> m_edges;
 };

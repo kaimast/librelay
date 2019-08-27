@@ -52,6 +52,13 @@ void ConnectionImpl::send(const std::set<channel_id_t> &channels, bitstream &&da
 
 void ConnectionImpl::on_network_message(yael::network::Socket::message_in_t &msg)
 {
+    if(!m_set_up)
+    {
+        // we don't actually need to handle the hello message
+        m_set_up = true;
+        return;
+    }
+
     std::set<channel_id_t> channels;
 
     bitstream bs;

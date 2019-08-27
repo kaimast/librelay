@@ -23,6 +23,8 @@ private:
 
     Callback &m_callback;
     const std::set<channel_id_t> m_subscriptions;
+
+    bool m_set_up = false;
 };
 
 }

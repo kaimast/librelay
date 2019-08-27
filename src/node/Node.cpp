@@ -237,6 +237,7 @@ void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std
     {
         if(p == except)
         {
+            // this is where the message came from
             continue;
         }
 

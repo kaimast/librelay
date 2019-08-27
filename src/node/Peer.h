@@ -20,11 +20,12 @@ public:
 
     const std::string& name() const { return m_name; }
 
+    bool is_set_up() const { return m_set_up; }
+
     bool has_subscription(const std::set<channel_id_t> &channels)
     {
         // empty channels -> send to all channels
-        // empty subscriptions -> this peer is subscribed to everything
-        if(channels.empty() || m_subscriptions.empty())
+        if(channels.empty() || !is_set_up())
         {
             return true;
         }
@@ -48,6 +49,8 @@ private:
 
     Node &m_node;
     const NetworkConfig &m_config;
+
+    bool m_set_up = false;
 
     std::string m_name;
     std::set<channel_id_t> m_subscriptions;

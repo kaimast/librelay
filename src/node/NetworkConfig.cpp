@@ -45,6 +45,8 @@ NetworkConfig::NetworkConfig(const std::string &local_name, const std::string &f
 
         json::Document doc(str);
 
+        m_num_channels = json::Document(doc, "num_channels").as_integer();
+
         json::Document nodes(doc, "nodes");
 
         for(size_t i = 0; i < nodes.get_size(); ++i)

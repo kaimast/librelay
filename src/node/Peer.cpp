@@ -10,7 +10,18 @@ namespace relay
 
 Peer::Peer(std::unique_ptr<yael::network::Socket> &&socket, Node &node, const NetworkConfig &config)
     : DelayedNetworkSocketListener(0, std::move(socket), yael::SocketType::Connection), m_node(node), m_config(config)
-{}
+{
+    std::set<channel_id_t> subscriptions;
+    for(uint32_t i = 0; i < m_config.num_channels(); ++i)
+    {
+        subscriptions.insert(i);
+    }
+
+    bitstream hello;
+    hello << m_config.local_name() << subscriptions;
+
+    send(hello.data(), hello.size());
+}
 
 Peer::Peer(const yael::network::Address &addr, Node &node, const NetworkConfig &config, const std::string &name)
     : DelayedNetworkSocketListener(0), m_node(node), m_config(config)
@@ -34,6 +45,10 @@ Peer::Peer(const yael::network::Address &addr, Node &node, const NetworkConfig &
     set_name(name);
 
     std::set<channel_id_t> subscriptions;
+    for(uint32_t i = 0; i < m_config.num_channels(); ++i)
+    {
+        subscriptions.insert(i);
+    }
 
     bitstream hello;
     hello << m_config.local_name() << subscriptions;
@@ -46,14 +61,20 @@ void Peer::on_network_message(yael::network::Socket::message_in_t &msg)
     bitstream input;
     input.assign(msg.data, msg.length, false);
 
-    if(m_name.empty())
+    if(!m_set_up)
     {
         std::string name;
         input >> name >> m_subscriptions;
-        set_name(name);
+
+        if(m_name.empty())
+        {
+            set_name(name);
+        }
+
+        m_set_up = true;
         return;
     }
- 
+
     std::set<channel_id_t> channels;
     input >> channels;
     input.move_to(0);
