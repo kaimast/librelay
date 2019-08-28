@@ -223,9 +223,8 @@ void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std
 {
     // prepend channel id to message
     msg.move_to(0);
-    msg.make_space(sizeof(uint32_t) + sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
+    msg.make_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
 
-    msg << static_cast<uint32_t>(msg.size());
     msg << channels;
 
     auto hdl = m_message_cache.insert(std::move(msg));
@@ -235,12 +234,22 @@ void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std
     std::copy(m_peers.begin(), m_peers.end(), ccopy.begin());
     lock.unlock();
 
+    if(ccopy.empty())
+    {
+        // nobody to send to
+        return;
+    }
+
     //make a shared ptr to reduce copying
     auto cpy = hdl.data().duplicate(true);
     uint8_t *data_raw_ptr;
     uint32_t data_size;
 
     cpy.detach(data_raw_ptr, data_size);
+
+    // this adds meta information to the message
+    ccopy[0]->message_slicer().prepare_message_raw(data_raw_ptr, data_size);
+
     auto data_ptr = std::shared_ptr<uint8_t[]>(data_raw_ptr);
 
     for(auto p: ccopy)
