@@ -56,7 +56,7 @@ Peer::Peer(const yael::network::Address &addr, Node &node, const NetworkConfig &
     send(hello.data(), hello.size());
 }
 
-void Peer::on_network_message(yael::network::Socket::message_in_t &msg)
+void Peer::on_network_message(yael::network::message_in_t &msg)
 {
     bitstream input;
     input.assign(msg.data, msg.length, false);

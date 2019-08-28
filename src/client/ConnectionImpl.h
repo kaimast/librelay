@@ -18,7 +18,7 @@ public:
     void close() override { yael::NetworkSocketListener::close_socket(); }
 
 private:
-    void on_network_message(yael::network::Socket::message_in_t &msg) override;
+    void on_network_message(yael::network::message_in_t &msg) override;
     void on_disconnect() override;
 
     Callback &m_callback;

@@ -42,7 +42,7 @@ public:
     }
 
 private:
-    void on_network_message(yael::network::Socket::message_in_t &msg) override;
+    void on_network_message(yael::network::message_in_t &msg) override;
     void on_disconnect() override;
 
     void set_name(const std::string &name);
