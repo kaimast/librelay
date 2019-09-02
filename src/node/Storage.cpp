@@ -43,7 +43,7 @@ void Storage::shard_t::make_space(size_t max_mem_size)
 
     if(current_mem_size > shard_max_mem_size)
     {
-        LOG(FATAL) << "Did not find enough to evict";
+        LOG(ERROR) << "Did not find enough to evict; might run out of memory";
     }
 }
 
