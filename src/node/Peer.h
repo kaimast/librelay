@@ -32,6 +32,11 @@ public:
 
         for(auto cid: channels)
         {
+            if(cid >= m_config.num_channels())
+            {
+                LOG(FATAL) << "Invalid channel id: " << cid;
+            }
+
             if(m_subscriptions.find(cid) != m_subscriptions.end())
             {
                 return true;
