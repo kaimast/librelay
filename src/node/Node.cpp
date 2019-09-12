@@ -159,8 +159,6 @@ void Node::on_new_connection(std::unique_ptr<yael::network::Socket> &&socket)
             break;
         }
 
-        auto msg = hdl->data();
-
         // there might be a lot of messages queued up,
         // so we might need to block
         //
@@ -170,6 +168,7 @@ void Node::on_new_connection(std::unique_ptr<yael::network::Socket> &&socket)
         // Defer writing to socket to the event loop
         bool async = true;
 
+        auto msg = hdl->data();
         peer->send(msg.data(), msg.size(), blocking, async);
     }
 }

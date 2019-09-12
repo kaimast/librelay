@@ -57,26 +57,33 @@ public:
         
         void operator=(entry_handle_t &&other)
         {
-            if(m_entry != nullptr)
-            {
-                LOG(FATAL) << "invalid state";
-            }
-
+            discard();
+            
             m_entry = other.m_entry;
             other.m_entry = nullptr;
         }
 
         ~entry_handle_t()
         {
-            if(m_entry)
-            {
-                auto prev = m_entry->usage_count.fetch_sub(1);
+            discard();
+        }
 
-                if(prev == 0)
-                {
-                    LOG(FATAL) << "Invalid state";
-                }
+        void discard()
+        {
+            if(m_entry == nullptr)
+            {
+                // nothing to do
+                return;
             }
+
+            auto prev = m_entry->usage_count.fetch_sub(1);
+
+            if(prev == 0)
+            {
+                LOG(FATAL) << "Invalid state";
+            }
+
+            m_entry = nullptr;
         }
 
         bitstream operator*() const
@@ -84,6 +91,7 @@ public:
             return data();
         }
 
+        /// Returns a read-only view of the underlying data
         bitstream data() const
         {
             if(!m_entry)
