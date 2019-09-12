@@ -43,7 +43,7 @@ void Storage::shard_t::make_space(size_t max_mem_size)
 
     if(current_mem_size > shard_max_mem_size)
     {
-        LOG(FATAL) << "Did not find enough to evict from relay storage; might run out of memory";
+        LOG(ERROR) << "Did not find enough to evict from relay storage; might run out of memory";
     }
 }
 
