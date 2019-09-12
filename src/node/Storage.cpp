@@ -137,6 +137,11 @@ Storage::entry_handle_t Storage::insert(bitstream value)
     file.write(reinterpret_cast<const char*>(&data_size), sizeof(data_size));
     file.write(reinterpret_cast<const char*>(data.data()), data_size);
 
+    if(file.bad())
+    {
+        LOG(FATAL) << "Write to disk failed. Storage full?";
+    }
+
     shard.entry_cond.notify_all();
 
     shard.current_mem_size += data_size;
