@@ -61,7 +61,7 @@ void Storage::shard_t::make_space(size_t max_mem_size)
             LOG(FATAL) << "Invalid state!";
         }
         
-        current_mem_size -= entry->data.size();
+        current_mem_size -= entry->mem_size();
 
         // unique ptr will delete for us
         val.second.reset();
@@ -80,6 +80,19 @@ Storage::shard_t::get_entry_from_disk(std::filesystem::path path, size_t offset)
     std::ifstream file(path, std::fstream::in | std::fstream::binary);
     file.seekg(offset);
 
+    std::set<channel_id_t> channels;
+
+    size_t num_channels;
+    file.read(reinterpret_cast<char*>(&num_channels), sizeof(num_channels));
+
+    for(size_t i = 0; i < num_channels; ++i)
+    {
+        channel_id_t id;
+        file.read(reinterpret_cast<char*>(&id), sizeof(id));
+
+        channels.insert(id);
+    }
+ 
     size_t data_size;
     file.read(reinterpret_cast<char*>(&data_size), sizeof(data_size));
     bitstream data;
@@ -88,7 +101,7 @@ Storage::shard_t::get_entry_from_disk(std::filesystem::path path, size_t offset)
     file.read(reinterpret_cast<char*>(data.data()), data_size);
 
     current_mem_size += data_size;
-    return std::make_unique<entry_t>(std::move(data));
+    return std::make_unique<entry_t>(std::move(channels), std::move(data));
 }
 
 std::optional<Storage::entry_handle_t>
@@ -133,7 +146,7 @@ Storage::get_entry(size_t pos)
     return hdl;
 }
 
-Storage::entry_handle_t Storage::insert(bitstream value)
+Storage::entry_handle_t Storage::insert(std::set<channel_id_t> channels, bitstream value)
 {
     auto key = m_num_entries.fetch_add(1);
 
@@ -143,7 +156,7 @@ Storage::entry_handle_t Storage::insert(bitstream value)
     std::unique_lock lock(shard.mutex);
 
     std::pair<size_t, std::unique_ptr<entry_t>> new_val =
-        {shard.storage_pos, std::make_unique<entry_t>(std::move(value))};
+        {shard.storage_pos, std::make_unique<entry_t>(std::move(channels), std::move(value))};
 
     auto [it, res] = shard.data.emplace(key, std::move(new_val));
 
@@ -205,6 +218,14 @@ void Storage::write_worker_loop()
         std::unique_lock file_lock(shard.file_mutex);
         auto path = m_prefix / (std::to_string(sid) + ".dat");
         std::ofstream file(path, std::fstream::app | std::fstream::binary);
+
+        size_t num_channels = entry.channels().size();
+        file.write(reinterpret_cast<const char*>(&num_channels), sizeof(num_channels));
+ 
+        for(auto id: entry.channels())
+        {
+            file.write(reinterpret_cast<const char*>(&id), sizeof(id));
+        }
 
         auto data = entry.data();
         size_t data_size = data.size();

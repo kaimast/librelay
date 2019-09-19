@@ -12,6 +12,8 @@
 #include <glog/logging.h>
 #include <bitstream.h>
 
+#include "librelay/Connection.h"
+
 namespace relay
 {
 
@@ -26,25 +28,27 @@ private:
     {
         friend class entry_handle_t;
 
-        entry_t(bitstream data_)
-            : data(std::move(data_)), usage_count(0)
+        entry_t(std::set<channel_id_t> channels_, bitstream data_)
+            : channels(std::move(channels_)), data(std::move(data_)), usage_count(0)
         {}
 
-        bitstream data;
+        const std::set<channel_id_t> channels;
+        const bitstream data;
 
         std::atomic<uint32_t> usage_count;
 
         std::list<data_map_t::iterator>::iterator lru_it;
-
+        
         size_t disk_size() const
         {
-            return data.size();
+            return mem_size();
         }
 
         /// Total amount of memory used by this file
         size_t mem_size() const
         {
-            return data.size();
+            return data.size() + sizeof(channel_id_t)*channels.size()
+                + 2*sizeof(size_t);
         }
 
     };
@@ -80,6 +84,16 @@ public:
         ~entry_handle_t()
         {
             discard();
+        }
+
+        const std::set<channel_id_t> channels() const
+        {
+            if(m_entry == nullptr)
+            {
+                LOG(FATAL) << "Invalid state";
+            }
+
+            return m_entry->channels;
         }
 
         void discard()
@@ -154,7 +168,7 @@ public:
     Storage(const std::string &prefix, size_t mem_size);
     ~Storage();
 
-    entry_handle_t insert(bitstream value);
+    entry_handle_t insert(std::set<channel_id_t> channels, bitstream value);
 
     std::optional<entry_handle_t> get_entry(size_t pos);
 

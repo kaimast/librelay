@@ -160,6 +160,11 @@ void Node::on_new_connection(std::unique_ptr<yael::network::Socket> &&socket)
             break;
         }
 
+        if(!peer->has_subscription(hdl->channels()))
+        {
+            continue;
+        }
+
         // there might be a lot of messages queued up,
         // so we might need to block
         //
@@ -227,7 +232,7 @@ void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std
 
     msg << channels;
 
-    auto hdl = m_message_cache.insert(std::move(msg));
+    auto hdl = m_message_cache.insert(std::move(channels), std::move(msg));
 
     std::unique_lock lock(m_peer_mutex);
     std::vector<std::shared_ptr<Peer>> ccopy(m_peers.size());
@@ -260,7 +265,7 @@ void Node::broadcast(std::set<channel_id_t> channels, bitstream &&msg, const std
             continue;
         }
 
-        if(!p->has_subscription(channels))
+        if(!p->has_subscription(hdl.channels()))
         {
             continue;
         }
