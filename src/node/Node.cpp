@@ -11,8 +11,9 @@
 namespace relay
 {
 
-// Cache at most 1Gb
-constexpr size_t MEM_SIZE = 1 * 1024 * 1024 * 1024;
+// Cache at most 10Gb
+//FIXME expose this through meson config
+constexpr size_t MEM_SIZE = 10 * 1024 * 1024 * 1024L;
 
 inline yael::network::Address read_address(const std::string &addr_str)
 {
