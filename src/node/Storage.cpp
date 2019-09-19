@@ -4,13 +4,40 @@ namespace relay
 {
 
 Storage::Storage(const std::string &prefix, size_t max_mem_size)
-    : m_prefix("./" + prefix + ".store"), m_max_mem_size(max_mem_size), m_data{}
+   : m_prefix("./" + prefix + ".store"), m_max_mem_size(max_mem_size), m_data_shards{}
 {
+    // truncate storage files
+    //FIXME we currently do not recover from previous state
+    for(size_t sid = 0; sid < NUM_SHARDS; ++sid)
+    {
+        auto path = m_prefix / (std::to_string(sid) + ".dat");
+
+        if(std::filesystem::exists(path))
+        {
+            DLOG(INFO) << "Removing old storage file " << path;
+            std::filesystem::resize_file(path, 0);
+        }
+    }
+
+    m_write_thread = std::thread(&Storage::write_worker_loop, this);
+
     try {
         std::filesystem::create_directory(m_prefix);
     } catch(const std::exception &e) {
         LOG(FATAL) << "Failed to created storage folder at " << m_prefix << ": " << e.what();
     }
+}
+
+Storage::~Storage()
+{
+    // stop worker thread
+    m_okay = false;
+    
+    std::unique_lock lock(m_write_queue_mutex);
+    m_write_queue_cond.notify_all();
+    lock.unlock();
+
+    m_write_thread.join();
 }
 
 void Storage::shard_t::make_space(size_t max_mem_size)
@@ -68,7 +95,7 @@ std::optional<Storage::entry_handle_t>
 Storage::get_entry(size_t pos)
 {
     auto sid = to_shard(pos);
-    auto &shard = m_data[sid];
+    auto &shard = m_data_shards[sid];
 
     std::unique_lock lock(shard.mutex);
 
@@ -111,7 +138,7 @@ Storage::entry_handle_t Storage::insert(bitstream value)
     auto key = m_num_entries.fetch_add(1);
 
     auto sid = to_shard(key);
-    auto &shard = m_data[sid];
+    auto &shard = m_data_shards[sid];
 
     std::unique_lock lock(shard.mutex);
 
@@ -128,34 +155,69 @@ Storage::entry_handle_t Storage::insert(bitstream value)
         LOG(FATAL) << "Failed to insert message";
     }
 
-    // write to disk
-    std::ofstream file(path, std::fstream::app | std::fstream::binary);
-
-    auto &data = val.second->data;
-    size_t data_size = data.size();
-
-    file.write(reinterpret_cast<const char*>(&data_size), sizeof(data_size));
-    file.write(reinterpret_cast<const char*>(data.data()), data_size);
-
-    if(file.bad())
+    // queue to be written to disk
     {
-        LOG(FATAL) << "Write to disk failed. Storage full?";
+        shard.current_mem_size += val.second->mem_size();
+        shard.storage_pos += val.second->disk_size();
+        shard.entry_cond.notify_all();
+
+        std::unique_lock lock(m_write_queue_mutex);
+
+        entry_handle_t hdl = {*val.second};
+        m_write_queue.emplace_back(std::pair{sid, std::move(hdl)});
+        m_write_queue_cond.notify_one();
     }
-
-    shard.entry_cond.notify_all();
-
-    shard.current_mem_size += data_size;
-    shard.storage_pos += data_size + sizeof(data_size);
 
     shard.lru.push_back(it);
     val.second->lru_it = shard.lru.end();
     val.second->lru_it--;
 
-    entry_handle_t hdl(*val.second);
-
+    entry_handle_t hdl = {*val.second};
+ 
     shard.make_space(m_max_mem_size);
 
     return hdl;
 }
+
+void Storage::write_worker_loop()
+{
+    while(m_okay)
+    {
+        std::unique_lock lock(m_write_queue_mutex);
+        while(m_write_queue.empty() && m_okay)
+        {
+            m_write_queue_cond.wait(lock);
+        }
+
+        if(!m_okay)
+        {
+            // TODO we should make sure everything is written to disk before we terminate
+            return;
+        }
+
+        auto it = m_write_queue.begin();
+        auto [sid, entry] = std::move(*it);
+        m_write_queue.erase(it);
+        lock.unlock();
+
+        auto &shard = m_data_shards[sid];
+
+        std::unique_lock file_lock(shard.file_mutex);
+        auto path = m_prefix / (std::to_string(sid) + ".dat");
+        std::ofstream file(path, std::fstream::app | std::fstream::binary);
+
+        auto data = entry.data();
+        size_t data_size = data.size();
+
+        file.write(reinterpret_cast<const char*>(&data_size), sizeof(data_size));
+        file.write(reinterpret_cast<const char*>(data.data()), data_size);
+
+        if(file.bad())
+        {
+            LOG(FATAL) << "Write to disk failed. Storage full?";
+        }
+    }
+}
+
 
 }

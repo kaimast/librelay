@@ -5,6 +5,8 @@
 #include <string>
 #include <list>
 #include <tuple>
+#include <thread>
+#include <condition_variable>
 #include <unordered_map>
 #include <filesystem>
 #include <glog/logging.h>
@@ -33,6 +35,18 @@ private:
         std::atomic<uint32_t> usage_count;
 
         std::list<data_map_t::iterator>::iterator lru_it;
+
+        size_t disk_size() const
+        {
+            return data.size();
+        }
+
+        /// Total amount of memory used by this file
+        size_t mem_size() const
+        {
+            return data.size();
+        }
+
     };
 
 public:
@@ -138,6 +152,7 @@ public:
     };
 
     Storage(const std::string &prefix, size_t mem_size);
+    ~Storage();
 
     entry_handle_t insert(bitstream value);
 
@@ -153,9 +168,13 @@ public:
 private:
     static constexpr size_t NUM_SHARDS = 10;
 
+    void write_worker_loop();
+ 
     struct shard_t
     {
         std::mutex mutex;
+        std::mutex file_mutex;
+
         std::condition_variable_any entry_cond;
 
         size_t current_mem_size = 0;
@@ -169,12 +188,19 @@ private:
         size_t storage_pos;
     };
 
+    std::atomic<bool> m_okay = true;
+    std::thread m_write_thread;
+
+    std::mutex m_write_queue_mutex;
+    std::condition_variable m_write_queue_cond;
+    std::list<std::pair<size_t, entry_handle_t>> m_write_queue;
+
     std::atomic<size_t> m_num_entries = 0;
 
     const std::filesystem::path m_prefix;
     const size_t m_max_mem_size;
 
-    std::array<shard_t, NUM_SHARDS> m_data;
+    std::array<shard_t, NUM_SHARDS> m_data_shards;
 
     size_t to_shard(const size_t key)
     {
