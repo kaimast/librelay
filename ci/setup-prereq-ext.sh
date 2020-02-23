@@ -23,6 +23,7 @@ function clone-repo() {
     url=$2
 
     if [ -d $dir ]; then
+        echo "Repo ${url} already cloned."
         return 1
     else
         git clone $url $dir
@@ -31,11 +32,11 @@ function clone-repo() {
 }
 
 cd $WORKDIR
-if clone-repo "botan" "https://github.com/randombit/botan.git"; then
-    cd botan
-    echo "Building botan"
-    git checkout release-2
-    python ./configure.py --with-openssl --prefix=$INSTALL_DIR
-    make -j10
-    make install
-fi
+clone-repo "botan" "https://github.com/randombit/botan.git"
+cd botan
+git pull
+echo "Building botan"
+git checkout release-2
+python ./configure.py --with-openssl --prefix=$INSTALL_DIR
+make -j10
+make install

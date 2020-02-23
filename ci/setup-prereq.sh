@@ -16,6 +16,7 @@ function clone-repo() {
     url=$2
 
     if [ -d $dir ]; then
+        echo "Repo ${url} already cloned."
         return 1
     else
         git clone $url $dir
@@ -26,32 +27,32 @@ function clone-repo() {
 ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 cd $WORKDIR
-if clone-repo "bitstream" "https://github.com/kaimast/bitstream.git"; then
-    cd bitstream
-    echo "Building bitstream"
-    meson build -Dbuildtype=$BUILDTYPE --prefix=$INSTALL_DIR
-    cd build
-    ninja -v
-    ninja install -v
-fi
+clone-repo "bitstream" "https://github.com/kaimast/bitstream.git"
+cd bitstream
+git pull
+echo "Building bitstream"
+meson build -Dbuildtype=$BUILDTYPE --prefix=$INSTALL_DIR
+cd build
+ninja -v
+ninja install -v
 
 cd $WORKDIR
-if clone-repo "yael" "https://github.com/kaimast/yael.git"; then
-    cd yael
-    echo "Building yael"
-    git pull
-    meson build -Dbotan_dir=$INSTALL_DIR/include/botan-2 -Dbuildtype=$BUILDTYPE  --prefix=$INSTALL_DIR
-    cd build
-    ninja -v
-    ninja install -v
-fi
+clone-repo "yael" "https://github.com/kaimast/yael.git"
+cd yael
+git pull
+echo "Building yael"
+git pull
+meson build -Dbotan_dir=$INSTALL_DIR/include/botan-2 -Dbuildtype=$BUILDTYPE  --prefix=$INSTALL_DIR
+cd build
+ninja -v
+ninja install -v
 
 cd $WORKDIR
-if clone-repo "libdocument" "https://github.com/kaimast/libdocument.git"; then
-    cd libdocument
-    echo "Building libdocument"
-    meson build -Dbuildtype=$BUILDTYPE --prefix=$INSTALL_DIR
-    cd build
-    ninja -v
-    ninja install -v
-fi
+clone-repo "libdocument" "https://github.com/kaimast/libdocument.git"
+cd libdocument
+git pull
+echo "Building libdocument"
+meson build -Dbuildtype=$BUILDTYPE --prefix=$INSTALL_DIR
+cd build
+ninja -v
+ninja install -v
