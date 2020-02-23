@@ -13,6 +13,10 @@ export LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:$INSTALL_DIR/lib
 
 ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+mkdir -p ${INSTALL_DIR}/include
+mkdir -p ${INSTALL_DIR}/lib
+mkdir -p ${INSTALL_DIR}/bin
+
 function clone-repo() {
     dir=$1
     url=$2
