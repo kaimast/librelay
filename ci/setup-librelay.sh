@@ -10,8 +10,8 @@ export CC=gcc-8
 export CXX=g++-8
 
 meson build -Dbuildtype=$BUILDTYPE --prefix=$INSTALL_DIR
-cd build
-ninja -v
-ninja install -v
-
-ninja tidy 
+pushd build
+    ninja -v
+    ninja install -v
+    ninja tidy
+popd

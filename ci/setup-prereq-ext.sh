@@ -18,25 +18,14 @@ mkdir -p ${INSTALL_DIR}/include
 mkdir -p ${INSTALL_DIR}/lib
 mkdir -p ${INSTALL_DIR}/bin
 
-function clone-repo() {
-    dir=$1
-    url=$2
-
-    if [ -d $dir ]; then
-        echo "Repo ${url} already cloned."
-        return 1
-    else
-        git clone $url $dir
-        return 0
-    fi
-}
-
 cd $WORKDIR
-clone-repo "botan" "https://github.com/randombit/botan.git"
-cd botan
-git pull
-echo "Building botan"
-git checkout release-2
-python ./configure.py --with-openssl --prefix=$INSTALL_DIR
-make -j10
-make install
+
+git clone https://github.com/randombit/botan.git
+pushd botan
+    git pull
+    echo "Building botan"
+    git checkout release-2
+    python ./configure.py --with-openssl --prefix=$INSTALL_DIR
+    make -j10
+    make install
+popd
