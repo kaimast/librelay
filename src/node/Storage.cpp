@@ -128,14 +128,14 @@ Storage::get_entry(size_t pos)
         val.second = shard.get_entry_from_disk(path, val.first);
 
         // increase read count before we evict stuff
-        hdl = entry_handle_t(*val.second);
+        hdl = entry_handle_t{val.second.get()};
 
         // evict other stuff to make space
         shard.make_space(m_max_mem_size);
     }
     else
     {
-        hdl = entry_handle_t(*val.second);
+        hdl = entry_handle_t{val.second.get()};
         shard.lru.erase(val.second->lru_it);
     }
 
@@ -167,6 +167,11 @@ Storage::entry_handle_t Storage::insert(std::set<channel_id_t> channels, bitstre
     {
         LOG(FATAL) << "Failed to insert message";
     }
+    entry_handle_t hdl{val.second.get()};
+
+    shard.lru.push_back(it);
+    val.second->lru_it = shard.lru.end();
+    val.second->lru_it--;
 
     // queue to be written to disk
     {
@@ -176,17 +181,12 @@ Storage::entry_handle_t Storage::insert(std::set<channel_id_t> channels, bitstre
 
         std::unique_lock lock(m_write_queue_mutex);
 
-        entry_handle_t hdl = {*val.second};
+        entry_handle_t hdl{val.second.get()};
         m_write_queue.emplace_back(std::pair{sid, std::move(hdl)});
         m_write_queue_cond.notify_one();
     }
 
-    shard.lru.push_back(it);
-    val.second->lru_it = shard.lru.end();
-    val.second->lru_it--;
-
-    entry_handle_t hdl = {*val.second};
- 
+    // evict other stuff?
     shard.make_space(m_max_mem_size);
 
     return hdl;
@@ -209,6 +209,11 @@ void Storage::write_worker_loop()
         }
 
         auto it = m_write_queue.begin();
+        if(it == m_write_queue.end())
+        {
+            LOG(FATAL) << "Invalid state";
+        }
+
         auto [sid, entry] = std::move(*it);
         m_write_queue.erase(it);
         lock.unlock();

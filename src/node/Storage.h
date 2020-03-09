@@ -32,6 +32,8 @@ private:
             : channels(std::move(channels_)), data(std::move(data_)), usage_count(0)
         {}
 
+        entry_t(const entry_t &other) = delete;
+
         const std::set<channel_id_t> channels;
         const bitstream data;
 
@@ -47,10 +49,8 @@ private:
         /// Total amount of memory used by this file
         size_t mem_size() const
         {
-            return data.size() + sizeof(channel_id_t)*channels.size()
-                + 2*sizeof(size_t);
+            return data.size() + sizeof(channel_id_t)*channels.size() + 2*sizeof(size_t);
         }
-
     };
 
 public:
@@ -61,8 +61,8 @@ public:
             : m_entry(nullptr)
         {}
 
-        entry_handle_t(entry_t &entry)
-            : m_entry(&entry)
+        entry_handle_t(entry_t *entry)
+            : m_entry(entry)
         {
             m_entry->usage_count++;
         }
@@ -72,11 +72,13 @@ public:
         {
             other.m_entry = nullptr;
         }
-        
+
+        entry_handle_t(const entry_handle_t &other) = delete;
+
         void operator=(entry_handle_t &&other)
         {
             discard();
-            
+
             m_entry = other.m_entry;
             other.m_entry = nullptr;
         }
@@ -98,7 +100,7 @@ public:
 
         void discard()
         {
-            if(m_entry == nullptr)
+            if(m_entry == nullptr) //NOLINT: clang seems to raise a false positive here
             {
                 // nothing to do
                 return;
@@ -108,7 +110,7 @@ public:
 
             if(prev == 0)
             {
-                LOG(FATAL) << "Invalid state";
+                LOG(FATAL) << "Invalid usage count";
             }
 
             m_entry = nullptr;
@@ -124,7 +126,7 @@ public:
         {
             if(!m_entry)
             {
-                LOG(FATAL) << "Cannot get data: invalid entry handle";
+                LOG(FATAL) << "Cannot get data: not a valid entry handle";
             }
 
             return m_entry->data.make_view();
