@@ -3,6 +3,7 @@
 #include <shared_mutex>
 #include <atomic>
 #include <string>
+#include <optional>
 #include <list>
 #include <tuple>
 #include <thread>

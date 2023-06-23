@@ -4,7 +4,7 @@ prefix_library_path=[get_option('prefix')+'/lib', get_option('prefix')+'/lib/x86
 
 inc_dirs = include_directories('include', 'src', '/usr/local/include', get_option('prefix')+'/include')
 
-compile_args = ['-std=c++17', '-Wextra', '-Werror']
+compile_args = ['-std=c++20', '-Wextra', '-Werror']
 
 cpp = meson.get_compiler('cpp')
 log_dep = cpp.find_library('glog')
