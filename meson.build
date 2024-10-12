@@ -7,7 +7,7 @@ inc_dirs = include_directories('include', 'src', '/usr/local/include', get_optio
 compile_args = ['-std=c++20', '-Wextra', '-Werror']
 
 cpp = meson.get_compiler('cpp')
-log_dep = cpp.find_library('glog')
+log_dep = dependency('glog')
 boost_po_dep = cpp.find_library('boost_program_options')
 
 thread_dep = dependency('threads')
