@@ -12,14 +12,13 @@ on:
 jobs:
   CI:
     runs-on: ubuntu-24.04
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
+     - name: Checkout code
+       uses: actions/checkout@v4
+       with:
            submodules: recursive
-      - name: Install dependencies
-        run: |
+     - name: Install dependencies
+       run: |
             sudo apt-get update
             sudo apt-get install meson build-essential git g++ libgtest-dev
             sudo apt-get install pkg-config cmake clang libgflags-dev libboost-program-options-dev
