@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=$INSTALL_DIR/lib:$LD_LIBRARY_PATH
 export PATH=$INSTALL_DIR/bin:$PATH
 
 pushd deps
-dependencies=("bitstream" "yael" "libdocument")
+dependencies=("bitstream" "yael")
 for name in "${dependencies[@]}"; do
     echo "Building ${name}"
     pushd $name 
