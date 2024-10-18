@@ -4,3 +4,6 @@
 [submodule "deps/bitstream"]
 	path = deps/bitstream
 	url = https://github.com/kaimast/bitstream.git
+[submodule "deps/libdocument"]
+	path = deps/libdocument
+	url = https://github.com/kaimast/libdocument.git
