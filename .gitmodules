@@ -1,0 +1,3 @@
+[submodule "deps/yael"]
+	path = deps/yael
+	url = https://github.com/kaimast/yael.git

@@ -4,25 +4,25 @@
 #include <stdbitstream.h>
 #include <yael/network/TcpSocket.h>
 
-namespace relay
-{
+namespace relay {
 
-ConnectionImpl::ConnectionImpl(const yael::network::Address &address, Callback &callback, std::set<channel_id_t> subscriptions)
-    : m_callback(callback), m_subscriptions(subscriptions)
-{
-    using yael::network::TcpSocket;
+ConnectionImpl::ConnectionImpl(const yael::network::Address &address,
+                               Callback &callback,
+                               std::set<channel_id_t> subscriptions)
+    : m_callback(callback), m_subscriptions(subscriptions) {
     using yael::network::MessageMode;
+    using yael::network::TcpSocket;
 
     auto sock = new TcpSocket(MessageMode::Datagram, MAX_SEND_QUEUE);
     auto res = sock->connect(address);
 
-    if(!res)
-    {
+    if (!res) {
         LOG(FATAL) << "Failed to connect to relay network";
     }
 
-    set_socket(std::unique_ptr<yael::network::Socket>(sock), yael::SocketType::Connection);
-    
+    set_socket(std::unique_ptr<yael::network::Socket>(sock),
+               yael::SocketType::Connection);
+
     bitstream hello;
     hello << std::string("client") << m_subscriptions;
 
@@ -31,12 +31,13 @@ ConnectionImpl::ConnectionImpl(const yael::network::Address &address, Callback &
 
 ConnectionImpl::~ConnectionImpl() = default;
 
-void ConnectionImpl::send(const std::set<channel_id_t> &channels, bitstream &&data, bool blocking)
-{
+void ConnectionImpl::send(const std::set<channel_id_t> &channels,
+                          bitstream &&data, bool blocking) {
     try {
         // prepend channel id to message
         data.move_to(0);
-        data.make_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
+        data.make_space(sizeof(uint32_t) +
+                        channels.size() * sizeof(channel_id_t));
         data << channels;
 
         // pass data to the network layer in form a simple buffer
@@ -44,16 +45,15 @@ void ConnectionImpl::send(const std::set<channel_id_t> &channels, bitstream &&da
         uint32_t size;
         data.detach(ptr, size);
 
-        NetworkSocketListener::send(std::unique_ptr<uint8_t[]>(ptr), size, blocking);
-    } catch(const yael::network::socket_error &e) {
+        NetworkSocketListener::send(std::unique_ptr<uint8_t[]>(ptr), size,
+                                    blocking);
+    } catch (const yael::network::socket_error &e) {
         LOG(ERROR) << "Failed to send message to relay network " << e.what();
     }
 }
 
-void ConnectionImpl::on_network_message(yael::network::message_in_t &msg)
-{
-    if(!m_set_up)
-    {
+void ConnectionImpl::on_network_message(yael::network::message_in_t &msg) {
+    if (!m_set_up) {
         // we don't actually need to handle the hello message
         m_set_up = true;
         return;
@@ -66,14 +66,11 @@ void ConnectionImpl::on_network_message(yael::network::message_in_t &msg)
     bs >> channels;
 
     bs.move_to(0);
-    bs.remove_space(sizeof(uint32_t) + channels.size()*sizeof(channel_id_t));
+    bs.remove_space(sizeof(uint32_t) + channels.size() * sizeof(channel_id_t));
 
     m_callback.on_new_message(channels, std::move(bs));
 }
 
-void ConnectionImpl::on_disconnect()
-{
-    m_callback.on_disconnect();
-}
+void ConnectionImpl::on_disconnect() { m_callback.on_disconnect(); }
 
-}
+} // namespace relay
