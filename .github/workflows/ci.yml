@@ -25,7 +25,6 @@ jobs:
             sudo apt-get install libbotan-2-dev libgmp-dev libssl-dev libunwind-dev libgoogle-glog-dev -y
      - name: Install Prerequisites
        run: |
-            source pyenv/bin/activate
             ./scripts/setup-prereq.sh
      - name: Build librelay 
        run: |
