@@ -3,30 +3,25 @@
 #include <fstream>
 #include <streambuf>
 
-#include <json/Document.h>
 #include <glog/logging.h>
+#include <json/Document.h>
 
-namespace relay
-{
+namespace relay {
 
 constexpr uint16_t SERVER_PORT = 5050;
 
-yael::network::Address read_address(const std::string &addr_str)
-{
+yael::network::Address read_address(const std::string &addr_str) {
     size_t found = addr_str.find(':');
 
-    if(found == std::string::npos)
-    {
+    if (found == std::string::npos) {
         // use default port
         return yael::network::Address(addr_str, SERVER_PORT);
-    }
-    else
-    {
+    } else {
         auto host = addr_str.substr(0, found);
-        auto port = std::atoi(addr_str.substr(found+1, std::string::npos).c_str());
+        auto port =
+            std::atoi(addr_str.substr(found + 1, std::string::npos).c_str());
 
-        if(port <= 0 || port > std::numeric_limits<uint16_t>::max())
-        {
+        if (port <= 0 || port > std::numeric_limits<uint16_t>::max()) {
             LOG(ERROR) << "Not a valid port number: " << port;
         }
 
@@ -34,14 +29,14 @@ yael::network::Address read_address(const std::string &addr_str)
     }
 }
 
-NetworkConfig::NetworkConfig(const std::string &local_name, const std::string &filename)
-    : m_local_name(local_name)
-{
+NetworkConfig::NetworkConfig(const std::string &local_name,
+                             const std::string &filename)
+    : m_local_name(local_name) {
     try {
         std::ifstream f(filename);
 
         std::string str((std::istreambuf_iterator<char>(f)),
-                                 std::istreambuf_iterator<char>());
+                        std::istreambuf_iterator<char>());
 
         json::Document doc(str);
 
@@ -49,8 +44,7 @@ NetworkConfig::NetworkConfig(const std::string &local_name, const std::string &f
 
         json::Document nodes(doc, "nodes");
 
-        for(size_t i = 0; i < nodes.get_size(); ++i)
-        {
+        for (size_t i = 0; i < nodes.get_size(); ++i) {
             auto name = nodes.get_key(i);
             auto ip_str = nodes.get_child(i).as_string();
 
@@ -58,19 +52,19 @@ NetworkConfig::NetworkConfig(const std::string &local_name, const std::string &f
         }
 
         json::Document edges(doc, "edges");
-        for(size_t i = 0; i < edges.get_size(); ++i)
-        {
+        for (size_t i = 0; i < edges.get_size(); ++i) {
             json::Document entry(edges, i);
 
             auto from = json::Document(entry, "from").as_string();
             auto to = json::Document(entry, "to").as_string();
             auto delay = json::Document(entry, "delay").as_integer();
 
-            m_edges.emplace_back(edge_t{from, to, static_cast<uint32_t>(delay)});
+            m_edges.emplace_back(
+                edge_t{from, to, static_cast<uint32_t>(delay)});
         }
-    } catch(std::exception &e) {
+    } catch (std::exception &e) {
         LOG(FATAL) << "Failed to load network config: " << e.what();
     }
 }
 
-}
+} // namespace relay

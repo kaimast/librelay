@@ -1,0 +1,35 @@
+name: Continuous Integration 
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  CI:
+    runs-on: ubuntu-24.04
+    steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+       with:
+           submodules: recursive
+     - name: Install dependencies
+       run: |
+            sudo apt-get update
+            sudo apt-get install meson build-essential git g++ libgtest-dev
+            sudo apt-get install pkg-config cmake clang libgflags-dev libboost-program-options-dev
+            sudo apt-get install libbotan-2-dev libgmp-dev libssl-dev libunwind-dev libgoogle-glog-dev -y
+     - name: Install Prerequisites
+       run: |
+            ./scripts/setup-prereq.sh
+     - name: Build librelay 
+       run: |
+            meson build -Dbuildtype=release --prefix=$HOME/local
+            cd build
+            ninja -v
+     - name: Formatting Checks 
+       run: cd build && ninja clang-format-check 
