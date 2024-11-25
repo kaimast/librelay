@@ -52,7 +52,6 @@ int main(int ac, char *av[]) {
         return 1;
     }
 
-
     yael::EventLoop::initialize();
     auto &el = yael::EventLoop::get_instance();
 
