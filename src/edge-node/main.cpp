@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "node/Node.h"
 #include "node/sighandler.h"
 
@@ -35,9 +37,21 @@ int main(int ac, char *av[]) {
         "how long to wait before connecting to other peers");
 
     po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(desc).positional(p).run(),
-              vm);
-    po::notify(vm);
+    try {
+        po::store(
+            po::command_line_parser(ac, av).options(desc).positional(p).run(),
+            vm);
+        po::notify(vm);
+    } catch (boost::wrapexcept<boost::program_options::unknown_option> &err) {
+        std::cerr << "ERROR: " << err.what() << std::endl;
+        std::cout << desc << std::endl;
+        return 1;
+    } catch (boost::wrapexcept<boost::program_options::required_option> &err) {
+        std::cerr << "ERROR: " << err.what() << std::endl;
+        std::cout << desc << std::endl;
+        return 1;
+    }
+
 
     yael::EventLoop::initialize();
     auto &el = yael::EventLoop::get_instance();
