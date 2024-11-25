@@ -34,12 +34,12 @@ if clangtidy.found()
     tidy_files = client_cpp_files + node_cpp_files
 
     run_target(
-        'tidy',
+        'lint',
         command: [
             'scripts/clang-tidy.sh',
-            clangtidy.path(),
-            meson.source_root(),
-            meson.build_root(),
+            clangtidy.full_path(),
+            meson.global_source_root(),
+            meson.global_build_root(),
             tidy_files
         ],
     depends: [relaynode, librelay])

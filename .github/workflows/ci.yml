@@ -31,5 +31,7 @@ jobs:
             meson build -Dbuildtype=release --prefix=$HOME/local
             cd build
             ninja -v
+     - name: Lint Checks 
+       run: cd build && ninja lint
      - name: Formatting Checks 
        run: cd build && ninja clang-format-check 
