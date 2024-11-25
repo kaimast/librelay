@@ -34,7 +34,7 @@ if clangtidy.found()
     tidy_files = client_cpp_files + node_cpp_files
 
     run_target(
-        'tidy',
+        'lint',
         command: [
             'scripts/clang-tidy.sh',
             clangtidy.full_path(),
